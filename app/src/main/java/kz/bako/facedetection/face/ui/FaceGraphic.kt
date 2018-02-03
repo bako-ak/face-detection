@@ -13,10 +13,7 @@ import com.google.android.gms.vision.face.Face
 class FaceGraphic(overlay: GraphicOverlay) : GraphicOverlay.Graphic(overlay) {
 
     companion object {
-        private val FACE_POSITION_RADIUS = 10.0f
         private val ID_TEXT_SIZE = 40.0f
-        private val ID_Y_OFFSET = 50.0f
-        private val ID_X_OFFSET = -50.0f
         private val BOX_STROKE_WIDTH = 5.0f
 
         private val COLOR_CHOICES = intArrayOf(Color.GREEN, Color.RED)
@@ -30,7 +27,6 @@ class FaceGraphic(overlay: GraphicOverlay) : GraphicOverlay.Graphic(overlay) {
 
     @Volatile private var mFace: Face? = null
     private var mFaceId: Int = 0
-    private val mFaceHappiness: Float = 0.toFloat()
 
     init {
 

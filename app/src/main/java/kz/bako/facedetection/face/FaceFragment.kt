@@ -21,101 +21,101 @@ import java.io.IOException
 
 class FaceFragment : Fragment(), CameraSource.PictureCallback {
 
-    private lateinit var binding: FragmentFaceBinding
-    private lateinit var delegate: Delegat
-    private var safeToTakePicture = true
-    private var cameraSource: CameraSource? = null
+	private lateinit var binding: FragmentFaceBinding
+	private lateinit var delegate: Delegat
+	private var safeToTakePicture = true
+	private var cameraSource: CameraSource? = null
 
 
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-        delegate = context as Delegat
-    }
+	override fun onAttach(context: Context?) {
+		super.onAttach(context)
+		delegate = context as Delegat
+	}
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = FragmentFaceBinding.inflate(inflater, container, false)
-        binding.takePhoto.setOnClickListener {
-            if (safeToTakePicture) {
-                cameraSource?.takePicture(null, this@FaceFragment)
-                safeToTakePicture = false
-            }
-        }
-        val detector = FaceDetector.Builder(context)
-                .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
-                .setProminentFaceOnly(true)
-                .setLandmarkType(FaceDetector.ALL_LANDMARKS)
-                .build()
-        detector.setProcessor(MultiProcessor.Builder(GraphicFaceTrackerFactory()).build())
-        if (!detector.isOperational) {
-            //TODO Alert Face detector dependencies are not yet available.
-        }
-        cameraSource = CameraSource.Builder(context, detector)
-                .setRequestedPreviewSize(640, 480)
-                .setFacing(CameraSource.CAMERA_FACING_FRONT)
-                .setRequestedFps(30.0f)
-                .setAutoFocusEnabled(true)
-                .build()
-        return binding.root
-    }
+	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+		binding = FragmentFaceBinding.inflate(inflater, container, false)
+		binding.takePhoto.setOnClickListener {
+			if (safeToTakePicture) {
+				cameraSource?.takePicture(null, this@FaceFragment)
+				safeToTakePicture = false
+			}
+		}
+		val detector = FaceDetector.Builder(context)
+				.setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
+				.setProminentFaceOnly(true)
+				.setLandmarkType(FaceDetector.ALL_LANDMARKS)
+				.build()
+		detector.setProcessor(MultiProcessor.Builder(GraphicFaceTrackerFactory()).build())
+		if (!detector.isOperational) {
+			return null
+		}
+		cameraSource = CameraSource.Builder(context, detector)
+				.setRequestedPreviewSize(640, 480)
+				.setFacing(CameraSource.CAMERA_FACING_FRONT)
+				.setRequestedFps(30.0f)
+				.setAutoFocusEnabled(true)
+				.build()
+		return binding.root
+	}
 
-    override fun onResume() {
-        super.onResume()
-        try {
-            cameraSource?.let { cameraSource ->
-                binding.preview.start(cameraSource, binding.faceOverlay)
-            }
-        } catch (e: IOException) {
-            cameraSource?.release()
-            cameraSource = null
-        }
-    }
+	override fun onResume() {
+		super.onResume()
+		try {
+			cameraSource?.let { cameraSource ->
+				binding.preview.start(cameraSource, binding.faceOverlay)
+			}
+		} catch (e: IOException) {
+			cameraSource?.release()
+			cameraSource = null
+		}
+	}
 
-    override fun onPause() {
-        super.onPause()
-        binding.preview.stop()
-    }
+	override fun onPause() {
+		super.onPause()
+		binding.preview.stop()
+	}
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        cameraSource?.release()
-    }
+	override fun onDestroyView() {
+		super.onDestroyView()
+		cameraSource?.release()
+	}
 
-    override fun onPictureTaken(data: ByteArray) {
-        cameraSource?.stop()
-        delegate.completedRecognition(getFace(context, data))
-    }
-
-
-    private inner class GraphicFaceTrackerFactory : MultiProcessor.Factory<Face> {
-        override fun create(face: Face): Tracker<Face> {
-            return GraphicFaceTracker(binding.faceOverlay)
-        }
-    }
-
-    private inner class GraphicFaceTracker(private val mOverlay: GraphicOverlay) : Tracker<Face>() {
-        private val mFaceGraphic: FaceGraphic = FaceGraphic(mOverlay)
+	override fun onPictureTaken(data: ByteArray) {
+		cameraSource?.stop()
+		delegate.completedRecognition(getFace(context, data))
+	}
 
 
-        override fun onNewItem(faceId: Int, item: Face?) {
-            mFaceGraphic.setId(faceId)
-        }
+	private inner class GraphicFaceTrackerFactory : MultiProcessor.Factory<Face> {
+		override fun create(face: Face): Tracker<Face> {
+			return GraphicFaceTracker(binding.faceOverlay)
+		}
+	}
 
-        override fun onUpdate(detectionResults: Detector.Detections<Face>?, face: Face) {
-            mOverlay.add(mFaceGraphic)
-            mFaceGraphic.updateFace(face)
-        }
+	private inner class GraphicFaceTracker(private val mOverlay: GraphicOverlay) : Tracker<Face>() {
+		private val mFaceGraphic: FaceGraphic = FaceGraphic(mOverlay)
 
-        override fun onMissing(detectionResults: Detector.Detections<Face>) {
-            mOverlay.remove(mFaceGraphic)
-        }
 
-        override fun onDone() {
-            mOverlay.remove(mFaceGraphic)
-        }
-    }
+		override fun onNewItem(faceId: Int, item: Face?) {
+			mFaceGraphic.setId(faceId)
+		}
 
-    interface Delegat {
-        fun completedRecognition(faces: Bitmap?)
-    }
+		override fun onUpdate(detectionResults: Detector.Detections<Face>?, face: Face) {
+			mOverlay.add(mFaceGraphic)
+			mFaceGraphic.updateFace(face)
+		}
+
+		override fun onMissing(detectionResults: Detector.Detections<Face>) {
+			mOverlay.remove(mFaceGraphic)
+		}
+
+		override fun onDone() {
+			mOverlay.remove(mFaceGraphic)
+		}
+	}
+
+	interface Delegat {
+		fun completedRecognition(faces: Bitmap?)
+	}
 
 }
