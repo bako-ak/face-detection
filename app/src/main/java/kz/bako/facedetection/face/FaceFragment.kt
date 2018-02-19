@@ -21,6 +21,16 @@ import java.io.IOException
 
 class FaceFragment : Fragment(), CameraSource.PictureCallback {
 
+	companion object {
+		const val ARGS_CAMERA = "camera"
+		fun create(camera: Int) = FaceFragment().apply {
+			arguments = Bundle().apply {
+				putInt(ARGS_CAMERA, camera)
+			}
+		}
+
+	}
+
 	private lateinit var binding: FragmentFaceBinding
 	private lateinit var delegate: Delegat
 	private var safeToTakePicture = true
@@ -34,12 +44,17 @@ class FaceFragment : Fragment(), CameraSource.PictureCallback {
 
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 		binding = FragmentFaceBinding.inflate(inflater, container, false)
+
+		val camera = arguments.getInt(ARGS_CAMERA, 1)
+
 		binding.takePhoto.setOnClickListener {
 			if (safeToTakePicture) {
 				cameraSource?.takePicture(null, this@FaceFragment)
 				safeToTakePicture = false
 			}
 		}
+
+		binding.changeCamera.setOnClickListener { delegate.changeCamera(camera) }
 		val detector = FaceDetector.Builder(context)
 				.setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
 				.setProminentFaceOnly(true)
@@ -51,7 +66,7 @@ class FaceFragment : Fragment(), CameraSource.PictureCallback {
 		}
 		cameraSource = CameraSource.Builder(context, detector)
 				.setRequestedPreviewSize(640, 480)
-				.setFacing(CameraSource.CAMERA_FACING_FRONT)
+				.setFacing(camera)
 				.setRequestedFps(30.0f)
 				.setAutoFocusEnabled(true)
 				.build()
@@ -82,7 +97,7 @@ class FaceFragment : Fragment(), CameraSource.PictureCallback {
 
 	override fun onPictureTaken(data: ByteArray) {
 		cameraSource?.stop()
-		delegate.completedRecognition(getFace(context, data))
+		delegate.completedRecognition(getImage(context, data))
 	}
 
 
@@ -116,6 +131,8 @@ class FaceFragment : Fragment(), CameraSource.PictureCallback {
 
 	interface Delegat {
 		fun completedRecognition(faces: Bitmap?)
+
+		fun changeCamera(camera: Int)
 	}
 
 }
